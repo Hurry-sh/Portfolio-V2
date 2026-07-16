@@ -20,6 +20,39 @@ const filters = [
   ["web", "Web"],
 ];
 
+const aboutTerminalLines = [
+  [
+    { text: "As a passionate tech enthusiast and developer, I have a solid grasp of " },
+    { text: "Python", tone: "cyan" },
+    { text: ", " },
+    { text: "SQL", tone: "acid" },
+    { text: " and " },
+    { text: "Java", tone: "purple" },
+    { text: "." },
+  ],
+  [
+    { text: "My expertise extends to areas like " },
+    { text: "Data Structures", tone: "bright" },
+    { text: ", " },
+    { text: "Algorithm Analysis", tone: "bright" },
+    { text: ", " },
+    { text: "Machine Learning", tone: "bright" },
+    { text: ", " },
+    { text: "Data Analytics", tone: "bright" },
+    { text: ", " },
+    { text: "Generative AI", tone: "bright" },
+    { text: " and " },
+    { text: "Data Engineering", tone: "bright" },
+    { text: "." },
+  ],
+  [
+    { text: "Collaborating with my teammates on various projects has enriched my knowledge, making me well-prepared for a rewarding journey in software development. 🚀" },
+  ],
+];
+
+const aboutTerminalLineLengths = aboutTerminalLines.map((line) => line.reduce((total, segment) => total + segment.text.length, 0));
+const aboutTerminalCharacterCount = aboutTerminalLineLengths.reduce((total, length) => total + length, 0);
+
 function usePageSignals() {
   const [activeSection, setActiveSection] = useState("home");
 
@@ -156,16 +189,138 @@ function SectionLabel({ number, children }) {
 }
 
 function SignalTicker() {
-  const motionRef = useMotionRegion();
+  const [motionRef, motionActive] = useMotionRegion();
   const items = [...tickerItems, ...tickerItems];
   return (
-    <div ref={motionRef} className="ticker motion-region" aria-label={`Focus areas: ${tickerItems.join(", ")}`}>
+    <div ref={motionRef} className={`ticker motion-region${motionActive ? " is-motion-active" : ""}`} aria-label={`Focus areas: ${tickerItems.join(", ")}`}>
       <div className="ticker-track" aria-hidden="true">
         {items.map((item, index) => (
           <span key={`${item}-${index}`}><i />{item}</span>
         ))}
       </div>
     </div>
+  );
+}
+
+function TerminalTypedLine({ segments, visibleCharacters, showCursor }) {
+  const renderSegments = (characterLimit) => {
+    let remaining = characterLimit;
+
+    return segments.map((segment, index) => {
+      const visibleText = segment.text.slice(0, Math.max(0, Math.min(segment.text.length, remaining)));
+      remaining = Math.max(0, remaining - segment.text.length);
+      if (!visibleText) return null;
+
+      if (segment.tone) {
+        return <strong key={`${segment.text}-${index}`} className={`about-terminal__token about-terminal__token--${segment.tone}`}>{visibleText}</strong>;
+      }
+
+      return <span key={`${segment.text}-${index}`}>{visibleText}</span>;
+    });
+  };
+
+  return (
+    <p className="about-terminal__typed-line">
+      <span className="about-terminal__line-sizer" aria-hidden="true">{renderSegments(Number.POSITIVE_INFINITY)}</span>
+      <span className="about-terminal__typed-copy">
+        {renderSegments(visibleCharacters)}
+        {showCursor && <i className="about-terminal__typing-caret" aria-hidden="true" />}
+      </span>
+    </p>
+  );
+}
+
+function AboutTerminal() {
+  const bodyRef = useRef(null);
+  const [typingStarted, setTypingStarted] = useState(false);
+  const [typedCharacters, setTypedCharacters] = useState(0);
+  const typingComplete = typedCharacters >= aboutTerminalCharacterCount;
+
+  useEffect(() => {
+    const element = bodyRef.current;
+    if (!element) return undefined;
+
+    const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    if (reduceMotion || !("IntersectionObserver" in window)) {
+      setTypedCharacters(aboutTerminalCharacterCount);
+      setTypingStarted(true);
+      return undefined;
+    }
+
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (!entry.isIntersecting) return;
+        setTypingStarted(true);
+        observer.unobserve(element);
+      },
+      { threshold: 0.24, rootMargin: "0px 0px -8%" },
+    );
+
+    observer.observe(element);
+    return () => observer.disconnect();
+  }, []);
+
+  useEffect(() => {
+    if (!typingStarted || typedCharacters >= aboutTerminalCharacterCount) return undefined;
+
+    const startedAt = performance.now();
+    let frame = 0;
+
+    const typeNextCharacter = (now) => {
+      const nextCount = Math.min(aboutTerminalCharacterCount, Math.floor((now - startedAt) / 16));
+      setTypedCharacters(nextCount);
+      if (nextCount < aboutTerminalCharacterCount) frame = requestAnimationFrame(typeNextCharacter);
+    };
+
+    frame = requestAnimationFrame(typeNextCharacter);
+    return () => cancelAnimationFrame(frame);
+  }, [typingStarted]);
+
+  let consumedCharacters = 0;
+  const activeLine = typingComplete
+    ? -1
+    : aboutTerminalLineLengths.findIndex((lineLength) => {
+        consumedCharacters += lineLength;
+        return typedCharacters < consumedCharacters;
+      });
+  consumedCharacters = 0;
+
+  return (
+    <Reveal className="about-terminal">
+      <div className="terminal-bar about-terminal__bar">
+        <div className="window-dots" aria-hidden="true"><span /><span /><span /></div>
+        <span>about_harish.sh</span>
+        <span>UTF-8</span>
+      </div>
+
+      <div className="about-terminal__body" ref={bodyRef}>
+        <p className="about-terminal__command">
+          <span>harish@portfolio</span>:<em>~</em>$ cat ./about.txt
+        </p>
+
+        <div className="about-terminal__output">
+          {aboutTerminalLines.map((segments, index) => {
+            const visibleCharacters = Math.max(0, Math.min(aboutTerminalLineLengths[index], typedCharacters - consumedCharacters));
+            consumedCharacters += aboutTerminalLineLengths[index];
+
+            return (
+              <div className="about-terminal__line" key={index}>
+                <span className="about-terminal__line-number" aria-hidden="true">{String(index + 1).padStart(2, "0")}</span>
+                <TerminalTypedLine segments={segments} visibleCharacters={visibleCharacters} showCursor={typingStarted && activeLine === index} />
+              </div>
+            );
+          })}
+        </div>
+
+        <p className={`about-terminal__prompt${typingComplete ? " is-ready" : ""}`} aria-hidden="true">
+          <span>harish@portfolio</span>:<em>~</em>$ <i />
+        </p>
+      </div>
+
+      <div className={`about-terminal__status${typingStarted && !typingComplete ? " is-typing" : ""}`} aria-live="polite">
+        <i /> {typingComplete ? "profile loaded · 0 errors" : typingStarted ? "streaming profile.txt..." : "waiting for reader..."}
+      </div>
+    </Reveal>
   );
 }
 
@@ -281,19 +436,7 @@ function Profile() {
           </div>
         </div>
 
-        <div className="principles-grid">
-          {[
-            ["01", "Build the input", "Reliable pipelines, thoughtful schemas, and visible quality before clever modeling."],
-            ["02", "Interrogate the model", "Treat experiments like research: test assumptions, inspect behavior, explain the signal."],
-            ["03", "Ship the insight", "A useful prediction belongs inside a system people can understand and operate."],
-          ].map(([number, title, copy], index) => (
-            <Reveal className="principle" key={number} delay={index * 80}>
-              <span>{number}</span>
-              <h3>{title}</h3>
-              <p>{copy}</p>
-            </Reveal>
-          ))}
-        </div>
+        <AboutTerminal />
       </div>
     </section>
   );
@@ -301,20 +444,38 @@ function Profile() {
 
 function Experience() {
   const timelineRef = useRef(null);
+  const timelineFrameRef = useRef(0);
+  const timelinePointerYRef = useRef(0);
+
+  useEffect(() => () => cancelAnimationFrame(timelineFrameRef.current), []);
 
   const moveTimelineGlow = (event) => {
     if (event.pointerType === "touch") return;
-    const timeline = timelineRef.current;
-    const rail = timeline?.querySelector(".timeline-line");
-    if (!timeline || !rail) return;
+    timelinePointerYRef.current = event.clientY;
+    if (timelineFrameRef.current) return;
 
-    const railRect = rail.getBoundingClientRect();
-    const position = Math.min(railRect.height, Math.max(0, event.clientY - railRect.top));
-    timeline.style.setProperty("--timeline-glow-y", `${position}px`);
-    timeline.style.setProperty("--timeline-glow-opacity", "1");
+    timelineFrameRef.current = requestAnimationFrame(() => {
+      timelineFrameRef.current = 0;
+      const timeline = timelineRef.current;
+      const rail = timeline?.querySelector(".timeline-line");
+      if (!timeline || !rail) return;
+
+      const railRect = rail.getBoundingClientRect();
+      const position = Math.min(railRect.height, Math.max(0, timelinePointerYRef.current - railRect.top));
+      const progress = railRect.height > 0 ? position / railRect.height : 0;
+      const hue = Math.round(82 + progress * 200);
+      const accentHue = (hue + 34) % 360;
+
+      timeline.style.setProperty("--timeline-glow-y", `${position}px`);
+      timeline.style.setProperty("--timeline-glow-color", `hsl(${hue} 100% 70%)`);
+      timeline.style.setProperty("--timeline-glow-accent", `hsl(${accentHue} 100% 70%)`);
+      timeline.style.setProperty("--timeline-glow-opacity", "1");
+    });
   };
 
   const hideTimelineGlow = () => {
+    cancelAnimationFrame(timelineFrameRef.current);
+    timelineFrameRef.current = 0;
     timelineRef.current?.style.setProperty("--timeline-glow-opacity", "0");
   };
 
@@ -436,10 +597,10 @@ function Work() {
 }
 
 function SkillOrbit() {
-  const motionRef = useMotionRegion();
+  const [motionRef, motionActive] = useMotionRegion();
 
   return (
-    <div ref={motionRef} className="skill-orbit motion-region" aria-label="Core skill constellation: data platforms and machine learning">
+    <div ref={motionRef} className={`skill-orbit motion-region${motionActive ? " is-motion-active" : ""}`} aria-label="Core skill constellation: data platforms and machine learning">
       <div className="skill-orbit__grid" aria-hidden="true" />
       <div className="skill-orbit__ring skill-orbit__ring--outer" aria-hidden="true">
         <span className="orbit-label orbit-label--python">TENSORFLOW</span>

@@ -36,6 +36,7 @@ export function Reveal({ children, className = "", delay = 0 }) {
 
 export function useMotionRegion(rootMargin = "160px 0px") {
   const ref = useRef(null);
+  const [motionActive, setMotionActive] = useState(false);
 
   useEffect(() => {
     const element = ref.current;
@@ -43,12 +44,12 @@ export function useMotionRegion(rootMargin = "160px 0px") {
 
     const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     if (reduceMotion || !("IntersectionObserver" in window)) {
-      element.classList.add("is-motion-active");
+      setMotionActive(true);
       return undefined;
     }
 
     const observer = new IntersectionObserver(
-      ([entry]) => element.classList.toggle("is-motion-active", entry.isIntersecting),
+      ([entry]) => setMotionActive(entry.isIntersecting),
       { threshold: 0.01, rootMargin },
     );
 
@@ -56,7 +57,7 @@ export function useMotionRegion(rootMargin = "160px 0px") {
     return () => observer.disconnect();
   }, [rootMargin]);
 
-  return ref;
+  return [ref, motionActive];
 }
 
 export function RoleRotator() {
@@ -296,11 +297,11 @@ const pipelineModes = {
 
 export function PipelineLab() {
   const [mode, setMode] = useState("learn");
-  const motionRef = useMotionRegion();
+  const [motionRef, motionActive] = useMotionRegion();
   const active = pipelineModes[mode];
 
   return (
-    <div ref={motionRef} className={`pipeline-lab pipeline-lab--${mode} motion-region`}>
+    <div ref={motionRef} className={`pipeline-lab pipeline-lab--${mode} motion-region${motionActive ? " is-motion-active" : ""}`}>
       <div className="pipeline-topbar">
         <div className="window-dots" aria-hidden="true"><span /><span /><span /></div>
         <span>harish.pipeline / live</span>
@@ -354,10 +355,10 @@ const annEdges = annLayers.slice(0, -1).flatMap((layer, layerIndex) =>
 );
 
 export function ProjectVisual({ type }) {
-  const motionRef = useMotionRegion();
+  const [motionRef, motionActive] = useMotionRegion();
 
   return (
-    <div ref={motionRef} className={`project-visual project-visual--${type} motion-region`} aria-hidden="true">
+    <div ref={motionRef} className={`project-visual project-visual--${type} motion-region${motionActive ? " is-motion-active" : ""}`} aria-hidden="true">
       {type === "tokens" && <><span>tomato</span><span>basil</span><span>→ recipe</span></>}
       {type === "radar" && <><div className="radar-ring radar-ring--one" /><div className="radar-ring radar-ring--two" /><div className="radar-sweep" /><i className="radar-hit radar-hit--a" /><i className="radar-hit radar-hit--b" /></>}
       {type === "network" && <svg viewBox="0 0 300 150"><path d="M25 110 87 45l55 56 50-68 82 67" /><circle cx="25" cy="110" r="6" /><circle cx="87" cy="45" r="6" /><circle cx="142" cy="101" r="6" /><circle cx="192" cy="33" r="6" /><circle cx="274" cy="100" r="6" /></svg>}
@@ -418,7 +419,7 @@ export function ProjectVisual({ type }) {
             <circle key={x} className="digit-sensor" cx={x} cy="124" r="6" style={{ "--digit": index }} />
           ))}
           {["7", "7", "7", "3"].map((digit, index) => (
-            <text key={`${digit}-${index}`} className="digit-glyph" x={58 + index * 78} y="98" style={{ "--digit": index }}>
+            <text key={`${digit}-${index}`} className={index === 3 ? "digit-glyph digit-glyph--blue" : "digit-glyph"} x={58 + index * 78} y="98" style={{ "--digit": index }}>
               {digit}
             </text>
           ))}
