@@ -6,6 +6,6 @@
   </defs>
   <rect width="64" height="64" fill="#080d0a"/>
   <rect width="64" height="64" fill="url(#grid)"/>
-  <path d="M13 18H19V29H28V18H34V46H28V35H19V46H13Z" fill="#eef3e9"/>
-  <path d="M38 18H44V29L54 18H62L48 32L62 46H54L44 35V46H38Z" fill="#eef3e9"/>
+  <path d="M8 18H14V29H23V18H29V46H23V35H14V46H8Z" fill="#eef3e9"/>
+  <path d="M33 18H39V29L49 18H57L43 32L57 46H49L39 35V46H33Z" fill="#eef3e9"/>
 </svg>
