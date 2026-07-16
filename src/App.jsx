@@ -190,7 +190,7 @@ function Hero() {
             </a>
           </div>
           <div className="hero-footnote">
-            <div className="hero-monogram" aria-hidden="true"><span>HK</span></div>
+            <img src={`${import.meta.env.BASE_URL}harish-profile.jpg`} alt="Harish Krishnan" />
             <div>
               <span>CURRENTLY</span>
               <p>Software Engineer 1 <b>@ bigbasket</b></p>

@@ -664,32 +664,14 @@ a {
   border-top: 1px solid var(--line);
 }
 
-.hero-monogram {
-  position: relative;
-  display: grid;
+.hero-footnote img {
   width: 46px;
   height: 46px;
+  object-fit: cover;
+  object-position: 50% 65%;
   border: 1px solid rgba(121, 230, 255, 0.32);
-  border-radius: 4px;
-  place-items: center;
-  overflow: hidden;
-  background:
-    linear-gradient(rgba(238, 243, 233, 0.075) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(238, 243, 233, 0.075) 1px, transparent 1px),
-    rgba(9, 14, 11, 0.94);
-  background-size: 10px 10px;
-  box-shadow: inset 0 0 24px rgba(121, 230, 255, 0.035);
-}
-
-.hero-footnote .hero-monogram span {
-  position: relative;
-  z-index: 1;
-  margin: 0;
-  color: var(--paper-bright);
-  font-family: var(--font-sans);
-  font-size: 1.02rem;
-  font-weight: 700;
-  letter-spacing: -0.08em;
+  border-radius: 50%;
+  filter: saturate(0.78) contrast(1.05);
 }
 
 .hero-footnote span {
