@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { experience, metrics, projects, skillGroups, socials, tickerItems } from "./data";
 import { ArrowDown, ArrowUpRight, CodeIcon, DownloadIcon, Github, Linkedin, MenuIcon } from "./components/Icons";
-import { NetworkCanvas, PipelineLab, ProjectVisual, Reveal, TiltCard } from "./components/Interactive";
+import { NetworkCanvas, PipelineLab, ProjectVisual, Reveal, TiltCard, useMotionRegion } from "./components/Interactive";
 
 const resumeUrl = `${import.meta.env.BASE_URL}Harish_Krishnan_Resume.pdf`;
 
@@ -24,31 +24,44 @@ function usePageSignals() {
   const [activeSection, setActiveSection] = useState("home");
 
   useEffect(() => {
-    let ticking = false;
-    const update = () => {
+    const progressBar = document.querySelector(".scroll-progress");
+    const cursorGlow = document.querySelector(".cursor-glow");
+    const finePointer = window.matchMedia("(pointer: fine)").matches;
+    let scrollFrame = 0;
+    let pointerFrame = 0;
+    let pointerX = window.innerWidth / 2;
+    let pointerY = window.innerHeight / 2;
+
+    const updateScrollProgress = () => {
       const scrollable = document.documentElement.scrollHeight - window.innerHeight;
       const progress = scrollable > 0 ? window.scrollY / scrollable : 0;
-      document.documentElement.style.setProperty("--scroll-progress", String(progress));
-      ticking = false;
+      progressBar?.style.setProperty("--scroll-progress", String(progress));
+      scrollFrame = 0;
     };
+
     const onScroll = () => {
-      if (!ticking) {
-        window.requestAnimationFrame(update);
-        ticking = true;
-      }
+      if (!scrollFrame) scrollFrame = window.requestAnimationFrame(updateScrollProgress);
     };
 
     const onPointerMove = (event) => {
-      document.documentElement.style.setProperty("--cursor-x", `${event.clientX}px`);
-      document.documentElement.style.setProperty("--cursor-y", `${event.clientY}px`);
+      pointerX = event.clientX;
+      pointerY = event.clientY;
+      if (pointerFrame) return;
+      pointerFrame = window.requestAnimationFrame(() => {
+        cursorGlow?.style.setProperty("--cursor-x", `${pointerX}px`);
+        cursorGlow?.style.setProperty("--cursor-y", `${pointerY}px`);
+        pointerFrame = 0;
+      });
     };
 
-    update();
+    updateScrollProgress();
     window.addEventListener("scroll", onScroll, { passive: true });
-    window.addEventListener("pointermove", onPointerMove, { passive: true });
+    if (finePointer) window.addEventListener("pointermove", onPointerMove, { passive: true });
     return () => {
+      window.cancelAnimationFrame(scrollFrame);
+      window.cancelAnimationFrame(pointerFrame);
       window.removeEventListener("scroll", onScroll);
-      window.removeEventListener("pointermove", onPointerMove);
+      if (finePointer) window.removeEventListener("pointermove", onPointerMove);
     };
   }, []);
 
@@ -143,9 +156,10 @@ function SectionLabel({ number, children }) {
 }
 
 function SignalTicker() {
+  const motionRef = useMotionRegion();
   const items = [...tickerItems, ...tickerItems];
   return (
-    <div className="ticker" aria-label={`Focus areas: ${tickerItems.join(", ")}`}>
+    <div ref={motionRef} className="ticker motion-region" aria-label={`Focus areas: ${tickerItems.join(", ")}`}>
       <div className="ticker-track" aria-hidden="true">
         {items.map((item, index) => (
           <span key={`${item}-${index}`}><i />{item}</span>
@@ -422,8 +436,10 @@ function Work() {
 }
 
 function SkillOrbit() {
+  const motionRef = useMotionRegion();
+
   return (
-    <div className="skill-orbit" aria-label="Core skill constellation: data platforms and machine learning">
+    <div ref={motionRef} className="skill-orbit motion-region" aria-label="Core skill constellation: data platforms and machine learning">
       <div className="skill-orbit__grid" aria-hidden="true" />
       <div className="skill-orbit__ring skill-orbit__ring--outer" aria-hidden="true">
         <span className="orbit-label orbit-label--python">TENSORFLOW</span>

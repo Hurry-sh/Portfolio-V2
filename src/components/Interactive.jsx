@@ -34,6 +34,31 @@ export function Reveal({ children, className = "", delay = 0 }) {
   );
 }
 
+export function useMotionRegion(rootMargin = "160px 0px") {
+  const ref = useRef(null);
+
+  useEffect(() => {
+    const element = ref.current;
+    if (!element) return undefined;
+
+    const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    if (reduceMotion || !("IntersectionObserver" in window)) {
+      element.classList.add("is-motion-active");
+      return undefined;
+    }
+
+    const observer = new IntersectionObserver(
+      ([entry]) => element.classList.toggle("is-motion-active", entry.isIntersecting),
+      { threshold: 0.01, rootMargin },
+    );
+
+    observer.observe(element);
+    return () => observer.disconnect();
+  }, [rootMargin]);
+
+  return ref;
+}
+
 export function RoleRotator() {
   const roles = useMemo(() => ["DATA ENGINEER", "ML BUILDER", "RESEARCHER"], []);
   const [index, setIndex] = useState(0);
@@ -84,18 +109,28 @@ export function NetworkCanvas() {
 
   useEffect(() => {
     const canvas = canvasRef.current;
-    const context = canvas.getContext("2d");
+    const context = canvas.getContext("2d", { alpha: true, desynchronized: true });
     const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    const coarsePointer = window.matchMedia("(pointer: coarse)").matches;
+    const activeFrameInterval = 1000 / (coarsePointer ? 20 : 24);
+    const idleFrameInterval = 1000 / 10;
+    const idleAfter = 3500;
+    const connectionRadius = 125;
+    const connectionRadiusSquared = connectionRadius * connectionRadius;
+    const pointerRadius = 110;
+    const pointerRadiusSquared = pointerRadius * pointerRadius;
     let width = 0;
     let height = 0;
     let dpr = 1;
     let frame = 0;
+    let previousTime = 0;
+    let lastInteraction = performance.now();
+    let running = false;
     let nodes = [];
-    let visible = true;
     const pointer = { x: -1000, y: -1000 };
 
     const createNodes = () => {
-      const count = Math.min(58, Math.max(24, Math.floor(width / 24)));
+      const count = Math.min(32, Math.max(18, Math.floor(width / 45)));
       nodes = Array.from({ length: count }, (_, index) => ({
         x: Math.random() * width,
         y: Math.random() * height,
@@ -110,7 +145,7 @@ export function NetworkCanvas() {
       const rect = canvas.getBoundingClientRect();
       width = rect.width;
       height = rect.height;
-      dpr = Math.min(window.devicePixelRatio || 1, 1.5);
+      dpr = Math.min(window.devicePixelRatio || 1, 1.25);
       canvas.width = Math.floor(width * dpr);
       canvas.height = Math.floor(height * dpr);
       context.setTransform(dpr, 0, 0, dpr, 0, 0);
@@ -118,9 +153,13 @@ export function NetworkCanvas() {
     };
 
     const movePointer = (event) => {
-      const rect = canvas.getBoundingClientRect();
-      pointer.x = event.clientX - rect.left;
-      pointer.y = event.clientY - rect.top;
+      pointer.x = event.clientX;
+      pointer.y = event.clientY;
+      lastInteraction = performance.now();
+    };
+
+    const markInteraction = () => {
+      lastInteraction = performance.now();
     };
 
     const clearPointer = () => {
@@ -129,19 +168,28 @@ export function NetworkCanvas() {
     };
 
     const draw = (time = 0) => {
+      const frameInterval = time - lastInteraction > idleAfter ? idleFrameInterval : activeFrameInterval;
+      if (!reduceMotion && previousTime && time - previousTime < frameInterval) {
+        if (running) frame = window.requestAnimationFrame(draw);
+        return;
+      }
+
+      const step = previousTime ? Math.min(2, (time - previousTime) / frameInterval) : 1;
+      previousTime = time;
       context.clearRect(0, 0, width, height);
 
       nodes.forEach((node, index) => {
         if (!reduceMotion) {
-          node.x += node.vx;
-          node.y += node.vy;
+          node.x += node.vx * step;
+          node.y += node.vy * step;
           if (node.x < -10 || node.x > width + 10) node.vx *= -1;
           if (node.y < -10 || node.y > height + 10) node.vy *= -1;
 
           const dx = node.x - pointer.x;
           const dy = node.y - pointer.y;
-          const distance = Math.hypot(dx, dy);
-          if (distance < 110 && distance > 0) {
+          const distanceSquared = dx * dx + dy * dy;
+          if (distanceSquared < pointerRadiusSquared && distanceSquared > 0) {
+            const distance = Math.sqrt(distanceSquared);
             node.x += (dx / distance) * 0.16;
             node.y += (dy / distance) * 0.16;
           }
@@ -149,9 +197,12 @@ export function NetworkCanvas() {
 
         for (let other = index + 1; other < nodes.length; other += 1) {
           const target = nodes[other];
-          const distance = Math.hypot(node.x - target.x, node.y - target.y);
-          if (distance < 125) {
-            const alpha = (1 - distance / 125) * 0.22;
+          const dx = node.x - target.x;
+          const dy = node.y - target.y;
+          const distanceSquared = dx * dx + dy * dy;
+          if (distanceSquared < connectionRadiusSquared) {
+            const distance = Math.sqrt(distanceSquared);
+            const alpha = (1 - distance / connectionRadius) * 0.22;
             context.beginPath();
             context.moveTo(node.x, node.y);
             context.lineTo(target.x, target.y);
@@ -168,37 +219,54 @@ export function NetworkCanvas() {
         context.fill();
       });
 
-      if (!reduceMotion && visible) frame = window.requestAnimationFrame(draw);
+      if (running) frame = window.requestAnimationFrame(draw);
     };
 
     const handleResize = () => {
       resize();
-      if (reduceMotion) draw();
+      if (!running) draw();
     };
 
-    const observer = new IntersectionObserver(([entry]) => {
-      visible = entry.isIntersecting;
-      if (visible && !reduceMotion) {
-        window.cancelAnimationFrame(frame);
-        frame = window.requestAnimationFrame(draw);
-      } else {
-        window.cancelAnimationFrame(frame);
+    const stop = () => {
+      running = false;
+      window.cancelAnimationFrame(frame);
+    };
+
+    const start = () => {
+      if (reduceMotion || running || document.hidden) return;
+      running = true;
+      previousTime = 0;
+      frame = window.requestAnimationFrame(draw);
+    };
+
+    const handleVisibilityChange = () => {
+      if (document.hidden) stop();
+      else {
+        markInteraction();
+        start();
       }
-    });
+    };
 
     resize();
-    draw();
-    observer.observe(canvas);
+    if (reduceMotion) draw();
+    else start();
     window.addEventListener("resize", handleResize);
-    window.addEventListener("pointermove", movePointer, { passive: true });
-    window.addEventListener("pointerleave", clearPointer);
+    window.addEventListener("scroll", markInteraction, { passive: true });
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+    if (!coarsePointer) {
+      window.addEventListener("pointermove", movePointer, { passive: true });
+      window.addEventListener("pointerleave", clearPointer);
+    }
 
     return () => {
-      observer.disconnect();
-      window.cancelAnimationFrame(frame);
+      stop();
       window.removeEventListener("resize", handleResize);
-      window.removeEventListener("pointermove", movePointer);
-      window.removeEventListener("pointerleave", clearPointer);
+      window.removeEventListener("scroll", markInteraction);
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+      if (!coarsePointer) {
+        window.removeEventListener("pointermove", movePointer);
+        window.removeEventListener("pointerleave", clearPointer);
+      }
     };
   }, []);
 
@@ -228,10 +296,11 @@ const pipelineModes = {
 
 export function PipelineLab() {
   const [mode, setMode] = useState("learn");
+  const motionRef = useMotionRegion();
   const active = pipelineModes[mode];
 
   return (
-    <div className={`pipeline-lab pipeline-lab--${mode}`}>
+    <div ref={motionRef} className={`pipeline-lab pipeline-lab--${mode} motion-region`}>
       <div className="pipeline-topbar">
         <div className="window-dots" aria-hidden="true"><span /><span /><span /></div>
         <span>harish.pipeline / live</span>
@@ -285,8 +354,10 @@ const annEdges = annLayers.slice(0, -1).flatMap((layer, layerIndex) =>
 );
 
 export function ProjectVisual({ type }) {
+  const motionRef = useMotionRegion();
+
   return (
-    <div className={`project-visual project-visual--${type}`} aria-hidden="true">
+    <div ref={motionRef} className={`project-visual project-visual--${type} motion-region`} aria-hidden="true">
       {type === "tokens" && <><span>tomato</span><span>basil</span><span>→ recipe</span></>}
       {type === "radar" && <><div className="radar-ring radar-ring--one" /><div className="radar-ring radar-ring--two" /><div className="radar-sweep" /><i className="radar-hit radar-hit--a" /><i className="radar-hit radar-hit--b" /></>}
       {type === "network" && <svg viewBox="0 0 300 150"><path d="M25 110 87 45l55 56 50-68 82 67" /><circle cx="25" cy="110" r="6" /><circle cx="87" cy="45" r="6" /><circle cx="142" cy="101" r="6" /><circle cx="192" cy="33" r="6" /><circle cx="274" cy="100" r="6" /></svg>}
