@@ -105,7 +105,7 @@ function Header({ activeSection }) {
   return (
     <header className="site-header">
       <a className="brand" href="#home" aria-label="Harish Krishnan, back to home">
-        <span className="brand-mark">H<span>/</span>K</span>
+        <span className="brand-mark">HK</span>
         <span className="brand-copy">AI + PLATFORMS</span>
       </a>
 
@@ -524,7 +524,7 @@ function Footer() {
   return (
     <footer className="site-footer">
       <div className="shell footer-inner">
-        <a className="brand" href="#home" aria-label="Back to top"><span className="brand-mark">H<span>/</span>K</span></a>
+        <a className="brand" href="#home" aria-label="Back to top"><span className="brand-mark">HK</span></a>
         <p>Designed as a living pipeline. Built by Harish Krishnan.</p>
         <div>
           <a href={socials.github} target="_blank" rel="noreferrer">GITHUB</a>

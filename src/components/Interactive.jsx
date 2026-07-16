@@ -361,7 +361,21 @@ export function ProjectVisual({ type }) {
       {type === "tokens" && <><span>tomato</span><span>basil</span><span>→ recipe</span></>}
       {type === "radar" && <><div className="radar-ring radar-ring--one" /><div className="radar-ring radar-ring--two" /><div className="radar-sweep" /><i className="radar-hit radar-hit--a" /><i className="radar-hit radar-hit--b" /></>}
       {type === "network" && <svg viewBox="0 0 300 150"><path d="M25 110 87 45l55 56 50-68 82 67" /><circle cx="25" cy="110" r="6" /><circle cx="87" cy="45" r="6" /><circle cx="142" cy="101" r="6" /><circle cx="192" cy="33" r="6" /><circle cx="274" cy="100" r="6" /></svg>}
-      {type === "blocks" && <><span /><span /><span /><span /><span /></>}
+      {type === "blocks" && (
+        <div className="server-cluster">
+          {[0, 1, 2].map((rack) => (
+            <div className="server-rack" key={rack} style={{ "--rack": rack }}>
+              <div className="server-rack__head"><span>NODE 0{rack + 1}</span><i /></div>
+              {[0, 1, 2, 3].map((bay) => (
+                <div className="server-rack__bay" key={bay}>
+                  <i /><i /><span />
+                </div>
+              ))}
+            </div>
+          ))}
+          <div className="server-cluster__status"><i /> DISTRIBUTED / 03 NODES</div>
+        </div>
+      )}
       {type === "ann" && (
         <svg className="ann-diagram" viewBox="0 0 348 180" preserveAspectRatio="xMidYMid meet">
           <g className="ann-edges">

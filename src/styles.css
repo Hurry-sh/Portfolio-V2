@@ -322,11 +322,6 @@ a {
   letter-spacing: -0.08em;
 }
 
-.brand-mark span {
-  color: var(--acid);
-  font-weight: 400;
-}
-
 .brand-copy {
   padding-left: 13px;
   border-left: 1px solid var(--line-high);
@@ -2130,26 +2125,140 @@ a {
 }
 
 .project-visual--blocks {
+  display: grid;
+  place-items: center;
+  background:
+    radial-gradient(circle at 50% 46%, rgba(121, 230, 255, 0.13), transparent 58%),
+    linear-gradient(rgba(238, 243, 233, 0.055) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(238, 243, 233, 0.055) 1px, transparent 1px),
+    #0a0f0c;
+  background-size: auto, 24px 24px, 24px 24px, auto;
+}
+
+.server-cluster {
+  position: relative;
+  display: flex;
+  width: min(88%, 330px);
+  height: 170px;
+  align-items: flex-start;
+  justify-content: center;
+  gap: 12px;
+  padding-top: 4px;
+}
+
+.server-cluster::before {
+  content: "";
+  position: absolute;
+  right: 4%;
+  bottom: 24px;
+  left: 4%;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(121, 230, 255, 0.55), var(--acid), rgba(121, 230, 255, 0.55), transparent);
+  box-shadow: 0 0 12px rgba(121, 230, 255, 0.25);
+}
+
+.server-rack {
+  position: relative;
+  z-index: 2;
+  width: 78px;
+  height: 128px;
+  padding: 7px;
+  border: 1px solid rgba(121, 230, 255, 0.52);
+  border-radius: 4px;
+  background: linear-gradient(160deg, rgba(121, 230, 255, 0.13), rgba(10, 15, 12, 0.96) 48%);
+  box-shadow:
+    0 0 24px rgba(121, 230, 255, 0.1),
+    inset 0 0 0 1px rgba(238, 243, 233, 0.035);
+  animation: blocks-wave 2.4s ease-in-out infinite alternate;
+  animation-delay: calc(var(--rack) * -0.4s);
+}
+
+.server-rack:nth-child(2) {
+  height: 144px;
+  border-color: rgba(216, 255, 101, 0.62);
+  background: linear-gradient(160deg, rgba(216, 255, 101, 0.15), rgba(10, 15, 12, 0.96) 48%);
+  box-shadow:
+    0 0 30px rgba(216, 255, 101, 0.13),
+    inset 0 0 0 1px rgba(238, 243, 233, 0.045);
+}
+
+.server-rack__head {
+  display: flex;
+  height: 19px;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 3px;
+  color: var(--cyan);
+  font-family: var(--font-mono);
+  font-size: 0.38rem;
+  letter-spacing: 0.06em;
+}
+
+.server-rack:nth-child(2) .server-rack__head {
+  color: var(--acid);
+}
+
+.server-rack__head i {
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: currentColor;
+  box-shadow: 0 0 7px currentColor;
+}
+
+.server-rack__bay {
+  display: flex;
+  height: 19px;
+  align-items: center;
+  gap: 4px;
+  margin-top: 3px;
+  padding: 0 5px;
+  border: 1px solid rgba(238, 243, 233, 0.13);
+  border-radius: 2px;
+  background: rgba(238, 243, 233, 0.035);
+}
+
+.server-rack__bay i {
+  width: 3px;
+  height: 3px;
+  border-radius: 50%;
+  background: var(--cyan);
+}
+
+.server-rack__bay i:nth-child(2) {
+  background: var(--acid);
+}
+
+.server-rack__bay span {
+  width: 29px;
+  height: 2px;
+  margin-left: auto;
+  background: repeating-linear-gradient(90deg, rgba(238, 243, 233, 0.34) 0 3px, transparent 3px 6px);
+}
+
+.server-cluster__status {
+  position: absolute;
+  z-index: 3;
+  bottom: 5px;
+  left: 50%;
   display: flex;
   align-items: center;
-  justify-content: center;
-  gap: 9px;
+  gap: 6px;
+  transform: translateX(-50%);
+  color: var(--muted);
+  font-family: var(--font-mono);
+  font-size: 0.42rem;
+  letter-spacing: 0.08em;
+  white-space: nowrap;
 }
 
-.project-visual--blocks span {
-  width: 38px;
-  height: 62px;
-  border: 1px solid rgba(121, 230, 255, 0.3);
-  border-radius: 3px;
-  background: rgba(121, 230, 255, 0.05);
-  box-shadow: 0 0 20px rgba(121, 230, 255, 0.03);
-  animation: blocks-wave 2.4s ease-in-out infinite alternate;
+.server-cluster__status i {
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: var(--acid);
+  box-shadow: 0 0 8px rgba(216, 255, 101, 0.7);
 }
-
-.project-visual--blocks span:nth-child(2) { height: 95px; animation-delay: -0.4s; }
-.project-visual--blocks span:nth-child(3) { height: 132px; border-color: rgba(216, 255, 101, 0.4); background: rgba(216, 255, 101, 0.06); animation-delay: -0.8s; }
-.project-visual--blocks span:nth-child(4) { height: 82px; animation-delay: -1.2s; }
-.project-visual--blocks span:nth-child(5) { height: 48px; animation-delay: -1.6s; }
 
 @keyframes blocks-wave {
   to {
@@ -2594,7 +2703,7 @@ a {
 .orbit-label--spark { right: -7%; top: 46%; }
 .orbit-label--kafka { bottom: 10%; left: 10%; }
 .orbit-label--sql { top: -7%; left: 42%; }
-.orbit-label--tf { right: -17%; bottom: 10%; }
+.orbit-label--tf { bottom: -7%; left: 30%; }
 
 .skill-orbit__caption {
   position: absolute;
