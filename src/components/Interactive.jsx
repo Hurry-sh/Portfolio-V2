@@ -1,0 +1,283 @@
+import { useEffect, useMemo, useRef, useState } from "react";
+
+export function Reveal({ children, className = "", delay = 0 }) {
+  const ref = useRef(null);
+
+  useEffect(() => {
+    const element = ref.current;
+    if (!element) return undefined;
+
+    const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    if (reduceMotion || !("IntersectionObserver" in window)) {
+      element.classList.add("is-visible");
+      return undefined;
+    }
+
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          element.classList.add("is-visible");
+          observer.unobserve(element);
+        }
+      },
+      { threshold: 0.12, rootMargin: "0px 0px -40px" },
+    );
+
+    observer.observe(element);
+    return () => observer.disconnect();
+  }, []);
+
+  return (
+    <div ref={ref} className={`reveal ${className}`} style={{ "--reveal-delay": `${delay}ms` }}>
+      {children}
+    </div>
+  );
+}
+
+export function RoleRotator() {
+  const roles = useMemo(() => ["DATA ENGINEER", "ML BUILDER", "RESEARCHER"], []);
+  const [index, setIndex] = useState(0);
+
+  useEffect(() => {
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return undefined;
+    const timer = window.setInterval(() => setIndex((current) => (current + 1) % roles.length), 2200);
+    return () => window.clearInterval(timer);
+  }, [roles]);
+
+  return (
+    <span className="role-window" aria-live="polite">
+      <span key={roles[index]} className="role-word">{roles[index]}</span>
+    </span>
+  );
+}
+
+export function TiltCard({ children, className = "" }) {
+  const ref = useRef(null);
+
+  const handleMove = (event) => {
+    if (window.matchMedia("(pointer: coarse)").matches) return;
+    const card = ref.current;
+    const rect = card.getBoundingClientRect();
+    const x = (event.clientX - rect.left) / rect.width;
+    const y = (event.clientY - rect.top) / rect.height;
+    card.style.setProperty("--tilt-x", `${(0.5 - y) * 7}deg`);
+    card.style.setProperty("--tilt-y", `${(x - 0.5) * 9}deg`);
+    card.style.setProperty("--spot-x", `${x * 100}%`);
+    card.style.setProperty("--spot-y", `${y * 100}%`);
+  };
+
+  const reset = () => {
+    const card = ref.current;
+    card.style.setProperty("--tilt-x", "0deg");
+    card.style.setProperty("--tilt-y", "0deg");
+  };
+
+  return (
+    <article ref={ref} onPointerMove={handleMove} onPointerLeave={reset} className={`tilt-card ${className}`}>
+      {children}
+    </article>
+  );
+}
+
+export function NetworkCanvas() {
+  const canvasRef = useRef(null);
+
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    const context = canvas.getContext("2d");
+    const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    let width = 0;
+    let height = 0;
+    let dpr = 1;
+    let frame = 0;
+    let nodes = [];
+    let visible = true;
+    const pointer = { x: -1000, y: -1000 };
+
+    const createNodes = () => {
+      const count = Math.min(58, Math.max(24, Math.floor(width / 24)));
+      nodes = Array.from({ length: count }, (_, index) => ({
+        x: Math.random() * width,
+        y: Math.random() * height,
+        vx: (Math.random() - 0.5) * 0.24,
+        vy: (Math.random() - 0.5) * 0.24,
+        radius: index % 9 === 0 ? 2.1 : 1.15,
+        phase: Math.random() * Math.PI * 2,
+      }));
+    };
+
+    const resize = () => {
+      const rect = canvas.getBoundingClientRect();
+      width = rect.width;
+      height = rect.height;
+      dpr = Math.min(window.devicePixelRatio || 1, 1.5);
+      canvas.width = Math.floor(width * dpr);
+      canvas.height = Math.floor(height * dpr);
+      context.setTransform(dpr, 0, 0, dpr, 0, 0);
+      createNodes();
+    };
+
+    const movePointer = (event) => {
+      const rect = canvas.getBoundingClientRect();
+      pointer.x = event.clientX - rect.left;
+      pointer.y = event.clientY - rect.top;
+    };
+
+    const clearPointer = () => {
+      pointer.x = -1000;
+      pointer.y = -1000;
+    };
+
+    const draw = (time = 0) => {
+      context.clearRect(0, 0, width, height);
+
+      nodes.forEach((node, index) => {
+        if (!reduceMotion) {
+          node.x += node.vx;
+          node.y += node.vy;
+          if (node.x < -10 || node.x > width + 10) node.vx *= -1;
+          if (node.y < -10 || node.y > height + 10) node.vy *= -1;
+
+          const dx = node.x - pointer.x;
+          const dy = node.y - pointer.y;
+          const distance = Math.hypot(dx, dy);
+          if (distance < 110 && distance > 0) {
+            node.x += (dx / distance) * 0.16;
+            node.y += (dy / distance) * 0.16;
+          }
+        }
+
+        for (let other = index + 1; other < nodes.length; other += 1) {
+          const target = nodes[other];
+          const distance = Math.hypot(node.x - target.x, node.y - target.y);
+          if (distance < 125) {
+            const alpha = (1 - distance / 125) * 0.16;
+            context.beginPath();
+            context.moveTo(node.x, node.y);
+            context.lineTo(target.x, target.y);
+            context.strokeStyle = `rgba(121, 230, 255, ${alpha})`;
+            context.lineWidth = 0.7;
+            context.stroke();
+          }
+        }
+
+        const pulse = reduceMotion ? 1 : 0.78 + Math.sin(time * 0.0015 + node.phase) * 0.22;
+        context.beginPath();
+        context.arc(node.x, node.y, node.radius * pulse, 0, Math.PI * 2);
+        context.fillStyle = index % 9 === 0 ? "rgba(216, 255, 101, .75)" : "rgba(121, 230, 255, .48)";
+        context.fill();
+      });
+
+      if (!reduceMotion && visible) frame = window.requestAnimationFrame(draw);
+    };
+
+    const observer = new IntersectionObserver(([entry]) => {
+      visible = entry.isIntersecting;
+      if (visible && !reduceMotion) {
+        window.cancelAnimationFrame(frame);
+        frame = window.requestAnimationFrame(draw);
+      } else {
+        window.cancelAnimationFrame(frame);
+      }
+    });
+
+    resize();
+    draw();
+    observer.observe(canvas);
+    window.addEventListener("resize", resize);
+    window.addEventListener("pointermove", movePointer, { passive: true });
+    window.addEventListener("pointerleave", clearPointer);
+
+    return () => {
+      observer.disconnect();
+      window.cancelAnimationFrame(frame);
+      window.removeEventListener("resize", resize);
+      window.removeEventListener("pointermove", movePointer);
+      window.removeEventListener("pointerleave", clearPointer);
+    };
+  }, []);
+
+  return <canvas className="network-canvas" ref={canvasRef} aria-hidden="true" />;
+}
+
+const pipelineModes = {
+  ingest: {
+    label: "INGEST",
+    metric: "1.2M events",
+    note: "Raw signals arrive continuously.",
+    nodes: ["events", "stream", "lake", "data"],
+  },
+  learn: {
+    label: "LEARN",
+    metric: "94.8% signal",
+    note: "Features become useful patterns.",
+    nodes: ["clean", "features", "model", "data"],
+  },
+  serve: {
+    label: "SERVE",
+    metric: "42ms response",
+    note: "Predictions become decisions.",
+    nodes: ["model", "API", "impact", "data"],
+  },
+};
+
+export function PipelineLab() {
+  const [mode, setMode] = useState("learn");
+  const active = pipelineModes[mode];
+
+  return (
+    <div className={`pipeline-lab pipeline-lab--${mode}`}>
+      <div className="pipeline-topbar">
+        <div className="window-dots" aria-hidden="true"><span /><span /><span /></div>
+        <span>harish.pipeline / live</span>
+        <span className="live-pulse">RUNNING</span>
+      </div>
+
+      <div className="pipeline-stage" aria-live="polite">
+        <div className="pipeline-grid" aria-hidden="true" />
+        <div className="orbit orbit--outer"><span className="orbit-node orbit-node--a" /><span className="orbit-node orbit-node--b" /></div>
+        <div className="orbit orbit--inner"><span className="orbit-node orbit-node--c" /></div>
+        <div className="model-core">
+          <span className="model-core__eyebrow">ACTIVE MODE</span>
+          <strong>{active.label}</strong>
+          <span>{active.metric}</span>
+        </div>
+        <svg className="pipeline-lines" viewBox="0 0 560 330" preserveAspectRatio="none" aria-hidden="true">
+          <path className="flow-path flow-path--one" d="M24 94 C160 94 165 165 280 165 S405 72 536 72" />
+          <path className="flow-path flow-path--two" d="M24 256 C140 256 174 165 280 165 S410 258 536 258" />
+        </svg>
+        <div className="data-node data-node--left-top"><i />{active.nodes[3]}</div>
+        <div className="data-node data-node--left-bottom"><i />{active.nodes[0]}</div>
+        <div className="data-node data-node--right-bottom"><i />{active.nodes[1]}</div>
+        <div className="data-node data-node--right"><i />{active.nodes[2]}</div>
+      </div>
+
+      <div className="pipeline-controls">
+        <p>{active.note}</p>
+        <div className="mode-switch" aria-label="Choose pipeline stage">
+          {Object.keys(pipelineModes).map((key) => (
+            <button key={key} type="button" onClick={() => setMode(key)} className={mode === key ? "is-active" : ""} aria-pressed={mode === key}>
+              {pipelineModes[key].label}
+            </button>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+export function ProjectVisual({ type }) {
+  return (
+    <div className={`project-visual project-visual--${type}`} aria-hidden="true">
+      {type === "tokens" && <><span>tomato</span><span>basil</span><span>→ recipe</span></>}
+      {type === "radar" && <><div className="radar-ring radar-ring--one" /><div className="radar-ring radar-ring--two" /><div className="radar-sweep" /><i className="radar-hit radar-hit--a" /><i className="radar-hit radar-hit--b" /></>}
+      {type === "network" && <svg viewBox="0 0 300 150"><path d="M25 110 87 45l55 56 50-68 82 67" /><circle cx="25" cy="110" r="6" /><circle cx="87" cy="45" r="6" /><circle cx="142" cy="101" r="6" /><circle cx="192" cy="33" r="6" /><circle cx="274" cy="100" r="6" /></svg>}
+      {type === "blocks" && <><span /><span /><span /><span /><span /></>}
+      {type === "matrix" && Array.from({ length: 36 }, (_, index) => <i key={index} style={{ "--cell": index }} />)}
+      {type === "scribble" && <svg viewBox="0 0 300 150"><path d="M26 99c28-84 20 39 52-25 27-54 19 68 52 0 20-42 20 49 43 5 25-47 19 46 45 0 17-30 25 0 52-23" /></svg>}
+      {type === "clock" && <><div className="clock-face"><i /><b /></div><span>SYNC_OK</span></>}
+      {type === "window" && <><div className="mini-window"><i /><i /><i /><span /><span /></div></>}
+      {type === "cursor" && <div className="cursor-mark">HK</div>}
+    </div>
+  );
+}
