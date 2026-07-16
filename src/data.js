@@ -16,7 +16,7 @@ export const experience = [
   {
     id: "01",
     date: "JUL 2026 — NOW",
-    role: "Software Engineer I · SE-1",
+    role: "Software Engineer 1",
     place: "bigbasket · AI & Platforms",
     copy: "Building at the intersection of AI systems, data infrastructure, and platform engineering.",
     tags: ["AI platforms", "Platform engineering", "Software engineering"],
@@ -25,8 +25,8 @@ export const experience = [
   {
     id: "02",
     date: "JAN — JUL 2026",
-    role: "Data Engineering Intern",
-    place: "bigbasket",
+    role: "Engineering Intern",
+    place: "bigbasket · Data Engineering",
     copy: "Helped migrate Redshift workloads to an AWS data lake spanning 3B+ rows and 100+ Bronze/Silver assets, with 99.8% pipeline success.",
     tags: ["AWS data lake", "Spark + dbt", "3B+ rows"],
   },
@@ -113,7 +113,7 @@ export const projects = [
       "A convolutional neural network trained to distinguish cats from dogs through learned visual features.",
     stack: ["CNN", "Deep learning", "Computer vision"],
     link: "https://github.com/Hurry-sh/CNN-Image-Classifier",
-    visual: "matrix",
+    visual: "ann",
   },
   {
     id: 6,
@@ -124,7 +124,7 @@ export const projects = [
       "A neural recognition experiment that translates handwritten inputs into machine-readable predictions.",
     stack: ["CNN", "Character recognition", "Vision"],
     link: "https://github.com/Hurry-sh/Hand-Writing-Recognition",
-    visual: "scribble",
+    visual: "digits",
   },
   {
     id: 7,

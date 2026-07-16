@@ -158,11 +158,6 @@ function SignalTicker() {
 function Hero() {
   return (
     <section className="hero" id="home">
-      <NetworkCanvas />
-      <div className="hero-grid" aria-hidden="true" />
-      <div className="hero-ambient hero-ambient--one" aria-hidden="true" />
-      <div className="hero-ambient hero-ambient--two" aria-hidden="true" />
-
       <div className="hero-rail hero-rail--top">
         <span>PORTFOLIO / 2026</span>
         <span className="hero-status"><i /> BUILDING AI + DATA PLATFORMS</span>
@@ -195,10 +190,10 @@ function Hero() {
             </a>
           </div>
           <div className="hero-footnote">
-            <img src={`${import.meta.env.BASE_URL}harish-profile.jpg`} alt="Harish Krishnan" />
+            <div className="hero-monogram" aria-hidden="true"><span>HK</span></div>
             <div>
               <span>CURRENTLY</span>
-              <p>Software Engineer I · SE-1 <b>@ bigbasket</b></p>
+              <p>Software Engineer 1 <b>@ bigbasket</b></p>
             </div>
           </div>
         </Reveal>
@@ -534,6 +529,12 @@ export default function App() {
     <>
       <a className="skip-link" href="#main-content">Skip to content</a>
       <div className="scroll-progress" aria-hidden="true" />
+      <div className="site-backdrop" aria-hidden="true">
+        <NetworkCanvas />
+        <div className="site-backdrop__grid" />
+        <div className="site-backdrop__ambient site-backdrop__ambient--one" />
+        <div className="site-backdrop__ambient site-backdrop__ambient--two" />
+      </div>
       <div className="cursor-glow" aria-hidden="true" />
       <Header activeSection={activeSection} />
       <main id="main-content">

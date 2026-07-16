@@ -151,12 +151,12 @@ export function NetworkCanvas() {
           const target = nodes[other];
           const distance = Math.hypot(node.x - target.x, node.y - target.y);
           if (distance < 125) {
-            const alpha = (1 - distance / 125) * 0.16;
+            const alpha = (1 - distance / 125) * 0.22;
             context.beginPath();
             context.moveTo(node.x, node.y);
             context.lineTo(target.x, target.y);
             context.strokeStyle = `rgba(121, 230, 255, ${alpha})`;
-            context.lineWidth = 0.7;
+            context.lineWidth = 0.8;
             context.stroke();
           }
         }
@@ -164,11 +164,16 @@ export function NetworkCanvas() {
         const pulse = reduceMotion ? 1 : 0.78 + Math.sin(time * 0.0015 + node.phase) * 0.22;
         context.beginPath();
         context.arc(node.x, node.y, node.radius * pulse, 0, Math.PI * 2);
-        context.fillStyle = index % 9 === 0 ? "rgba(216, 255, 101, .75)" : "rgba(121, 230, 255, .48)";
+        context.fillStyle = index % 9 === 0 ? "rgba(216, 255, 101, .82)" : "rgba(121, 230, 255, .56)";
         context.fill();
       });
 
       if (!reduceMotion && visible) frame = window.requestAnimationFrame(draw);
+    };
+
+    const handleResize = () => {
+      resize();
+      if (reduceMotion) draw();
     };
 
     const observer = new IntersectionObserver(([entry]) => {
@@ -184,14 +189,14 @@ export function NetworkCanvas() {
     resize();
     draw();
     observer.observe(canvas);
-    window.addEventListener("resize", resize);
+    window.addEventListener("resize", handleResize);
     window.addEventListener("pointermove", movePointer, { passive: true });
     window.addEventListener("pointerleave", clearPointer);
 
     return () => {
       observer.disconnect();
       window.cancelAnimationFrame(frame);
-      window.removeEventListener("resize", resize);
+      window.removeEventListener("resize", handleResize);
       window.removeEventListener("pointermove", movePointer);
       window.removeEventListener("pointerleave", clearPointer);
     };
@@ -243,7 +248,7 @@ export function PipelineLab() {
           <span>{active.metric}</span>
         </div>
         <svg className="pipeline-lines" viewBox="0 0 560 330" preserveAspectRatio="none" aria-hidden="true">
-          <path className="flow-path flow-path--one" d="M24 94 C160 94 165 165 280 165 S405 72 536 72" />
+          <path className="flow-path flow-path--one" d="M24 94 C160 94 165 165 280 165 S405 94 536 94" />
           <path className="flow-path flow-path--two" d="M24 256 C140 256 174 165 280 165 S410 258 536 258" />
         </svg>
         <div className="data-node data-node--left-top"><i />{active.nodes[3]}</div>
@@ -266,6 +271,19 @@ export function PipelineLab() {
   );
 }
 
+const annLayers = [
+  [38, 74, 110, 146].map((y) => ({ x: 38, y })),
+  [24, 55, 86, 117, 148].map((y) => ({ x: 126, y })),
+  [38, 74, 110, 146].map((y) => ({ x: 218, y })),
+  [66, 120].map((y) => ({ x: 310, y })),
+];
+
+const annEdges = annLayers.slice(0, -1).flatMap((layer, layerIndex) =>
+  layer.flatMap((source) =>
+    annLayers[layerIndex + 1].map((target) => ({ source, target, layerIndex })),
+  ),
+);
+
 export function ProjectVisual({ type }) {
   return (
     <div className={`project-visual project-visual--${type}`} aria-hidden="true">
@@ -273,8 +291,55 @@ export function ProjectVisual({ type }) {
       {type === "radar" && <><div className="radar-ring radar-ring--one" /><div className="radar-ring radar-ring--two" /><div className="radar-sweep" /><i className="radar-hit radar-hit--a" /><i className="radar-hit radar-hit--b" /></>}
       {type === "network" && <svg viewBox="0 0 300 150"><path d="M25 110 87 45l55 56 50-68 82 67" /><circle cx="25" cy="110" r="6" /><circle cx="87" cy="45" r="6" /><circle cx="142" cy="101" r="6" /><circle cx="192" cy="33" r="6" /><circle cx="274" cy="100" r="6" /></svg>}
       {type === "blocks" && <><span /><span /><span /><span /><span /></>}
-      {type === "matrix" && Array.from({ length: 36 }, (_, index) => <i key={index} style={{ "--cell": index }} />)}
-      {type === "scribble" && <svg viewBox="0 0 300 150"><path d="M26 99c28-84 20 39 52-25 27-54 19 68 52 0 20-42 20 49 43 5 25-47 19 46 45 0 17-30 25 0 52-23" /></svg>}
+      {type === "ann" && (
+        <svg className="ann-diagram" viewBox="0 0 348 180" preserveAspectRatio="xMidYMid meet">
+          <g className="ann-edges">
+            {annEdges.map(({ source, target, layerIndex }, index) => (
+              <line
+                key={`${source.x}-${source.y}-${target.x}-${target.y}`}
+                x1={source.x}
+                y1={source.y}
+                x2={target.x}
+                y2={target.y}
+                className={`ann-edge ann-edge--layer-${layerIndex + 1}`}
+                style={{ "--edge": index }}
+              />
+            ))}
+          </g>
+          <g className="ann-nodes">
+            {annLayers.flatMap((layer, layerIndex) => layer.map((node, nodeIndex) => (
+              <circle
+                key={`${node.x}-${node.y}`}
+                cx={node.x}
+                cy={node.y}
+                r={layerIndex === annLayers.length - 1 ? 7 : 5.5}
+                className={layerIndex === annLayers.length - 1 ? "ann-node ann-node--output" : "ann-node"}
+                style={{ "--node": layerIndex * 5 + nodeIndex }}
+              />
+            )))}
+          </g>
+          <g className="ann-labels">
+            <text x="38" y="172">INPUT</text>
+            <text x="126" y="172">HIDDEN</text>
+            <text x="218" y="172">HIDDEN</text>
+            <text x="310" y="172">CLASS</text>
+          </g>
+        </svg>
+      )}
+      {type === "digits" && (
+        <svg className="digit-canvas" viewBox="0 0 350 150" preserveAspectRatio="xMidYMid meet">
+          <path className="digit-signal" d="M45 124 H305" />
+          {[58, 136, 214, 292].map((x, index) => (
+            <circle key={x} className="digit-sensor" cx={x} cy="124" r="6" style={{ "--digit": index }} />
+          ))}
+          {["7", "7", "7", "3"].map((digit, index) => (
+            <text key={`${digit}-${index}`} className="digit-glyph" x={58 + index * 78} y="98" style={{ "--digit": index }}>
+              {digit}
+            </text>
+          ))}
+          <text className="digit-caption" x="175" y="143">HANDWRITING / RECOGNIZED</text>
+        </svg>
+      )}
       {type === "clock" && <><div className="clock-face"><i /><b /></div><span>SYNC_OK</span></>}
       {type === "window" && <><div className="mini-window"><i /><i /><i /><span /><span /></div></>}
       {type === "cursor" && <div className="cursor-mark">HK</div>}
