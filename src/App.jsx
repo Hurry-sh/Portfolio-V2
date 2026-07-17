@@ -295,7 +295,7 @@ function AboutTerminal() {
 
       <div className="about-terminal__body" ref={bodyRef}>
         <p className="about-terminal__command">
-          <span>harish@portfolio</span>:<em>~</em>$ cat ./about.txt
+          <span>harish@portfolio</span>:<em>~</em>$ cat ./wot_ra_sudeep.txt
         </p>
 
         <div className="about-terminal__output">
@@ -318,7 +318,7 @@ function AboutTerminal() {
       </div>
 
       <div className={`about-terminal__status${typingStarted && !typingComplete ? " is-typing" : ""}`} aria-live="polite">
-        <i /> {typingComplete ? "profile loaded · 0 errors" : typingStarted ? "streaming profile.txt..." : "waiting for reader..."}
+        <i /> {typingComplete ? "profile loaded · 0 errors" : typingStarted ? "streaming wot_ra_sudeep.txt..." : "waiting for reader..."}
       </div>
     </Reveal>
   );
