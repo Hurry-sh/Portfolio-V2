@@ -1594,26 +1594,6 @@ a {
     opacity 180ms ease;
 }
 
-.timeline-line::after {
-  content: "";
-  position: absolute;
-  top: var(--timeline-glow-y);
-  left: 50%;
-  width: 7px;
-  height: 7px;
-  transform: translate(-50%, -50%);
-  border: 2px solid var(--ink-soft);
-  border-radius: 50%;
-  background: var(--timeline-glow-color);
-  box-shadow:
-    0 0 0 4px var(--timeline-glow-accent),
-    0 0 18px var(--timeline-glow-color);
-  opacity: var(--timeline-glow-opacity);
-  transition:
-    top 80ms linear,
-    opacity 180ms ease;
-}
-
 .timeline-row {
   position: relative;
   z-index: 3;
